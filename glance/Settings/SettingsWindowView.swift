@@ -172,7 +172,7 @@ struct SettingsWindowView: View {
             case .about:
                 AboutSettingsPage(updater: environment.updater, environment: environment)
             case .debugFaceLab:
-                FaceLabView(controller: environment.faceLabController)
+                LazyFaceLabPage()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -193,6 +193,36 @@ struct SettingsWindowView: View {
         guard tabs.indices.contains(adjacentIndex) else { return }
         withAnimation(SettingsMetrics.tabSelectionAnimation) {
             selection = tabs[adjacentIndex]
+        }
+    }
+}
+
+/// Face Lab is deliberately hidden behind a debug gesture, so keeping its
+/// Core ML pipeline alive for the app's entire background lifetime wastes a
+/// substantial amount of memory. Create it only when that tab is selected and
+/// release it again as soon as the user leaves.
+private struct LazyFaceLabPage: View {
+    @State private var controller: FaceLabController?
+
+    var body: some View {
+        Group {
+            if let controller {
+                FaceLabView(controller: controller)
+            } else {
+                ProgressView("Loading Face Lab…")
+                    .frame(maxWidth: .infinity, minHeight: SettingsMetrics.emptyStateMinHeight)
+                    .task {
+                        // Yield once so the loading state can draw before Core ML
+                        // initializes its model and Neural Engine resources.
+                        await Task.yield()
+                        guard !Task.isCancelled, controller == nil else { return }
+                        controller = FaceLabController()
+                    }
+            }
+        }
+        .onDisappear {
+            controller?.stop()
+            controller = nil
         }
     }
 }
