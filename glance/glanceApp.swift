@@ -76,6 +76,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        GlanceSettings.shared.bindMenuBarVisibility { [weak self] isVisible in
+            self?.setMenuBarVisibility(isVisible)
+        }
+
+        // SwiftUI can flip the app back to `.regular` while installing scenes even with `.suppressed`; re-assert accessory.
+        NSApp.setActivationPolicy(.accessory)
+
+        // `object: nil` deliberately — the Settings window may not exist yet (SwiftUI creates scene content lazily), and this
+        // still matches it by identity in the handler below once it does close.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(windowWillClose(_:)),
+            name: NSWindow.willCloseNotification, object: nil
+        )
+
+        // Deferred until onboarding is done — Sparkle's own "Check for updates automatically?" consent alert fires the moment
+        // it starts on a fresh install, and starting unconditionally here used to pop it mid-onboarding.
+        if GlanceSettings.shared.hasCompletedOnboarding {
+            if GlanceSettings.shared.hasAcknowledgedSecurityNotice {
+                startUpdaterIfNeeded()
+            } else {
+                // Upgraded from a version before the notice existed — show it once, standalone.
+                presentPostUpdateSecurityNotice()
+            }
+        } else {
+            presentOnboardingGate()
+        }
+    }
+
+    /// Creates or removes the status item without changing whether the app is
+    /// running. This is deliberately separate from the Dock activation policy.
+    private func setMenuBarVisibility(_ isVisible: Bool) {
+        if isVisible {
+            installStatusItemIfNeeded()
+        } else if let statusItem {
+            NSStatusBar.system.removeStatusItem(statusItem)
+            self.statusItem = nil
+            sessionMenuItem = nil
+        }
+    }
+
+    private func installStatusItemIfNeeded() {
+        guard statusItem == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         // Custom mark, not an SF Symbol; `isTemplate` is cheap insurance against a plain black-square render.
         let icon = NSImage(named: "MenuBarIcon")
@@ -110,29 +152,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem = item
 
         updateSessionMenuItem()
-
-        // SwiftUI can flip the app back to `.regular` while installing scenes even with `.suppressed`; re-assert accessory.
-        NSApp.setActivationPolicy(.accessory)
-
-        // `object: nil` deliberately — the Settings window may not exist yet (SwiftUI creates scene content lazily), and this
-        // still matches it by identity in the handler below once it does close.
-        NotificationCenter.default.addObserver(
-            self, selector: #selector(windowWillClose(_:)),
-            name: NSWindow.willCloseNotification, object: nil
-        )
-
-        // Deferred until onboarding is done — Sparkle's own "Check for updates automatically?" consent alert fires the moment
-        // it starts on a fresh install, and starting unconditionally here used to pop it mid-onboarding.
-        if GlanceSettings.shared.hasCompletedOnboarding {
-            if GlanceSettings.shared.hasAcknowledgedSecurityNotice {
-                startUpdaterIfNeeded()
-            } else {
-                // Upgraded from a version before the notice existed — show it once, standalone.
-                presentPostUpdateSecurityNotice()
-            }
-        } else {
-            presentOnboardingGate()
-        }
     }
 
     /// First-run gate: onboarding lives entirely in the notch, so this stays accessory. Called once at launch if onboarding

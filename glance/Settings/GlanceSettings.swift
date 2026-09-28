@@ -115,6 +115,7 @@ final class GlanceSettings {
         static let faceDetectionSeconds = "GlanceSettings.faceDetectionSeconds"
         static let autoRetryOnce = "GlanceSettings.autoRetryOnce"
         static let hapticFeedbackEnabled = "GlanceSettings.hapticFeedbackEnabled"
+        static let showsInMenuBar = "GlanceSettings.showsInMenuBar"
         static let preferredDisplayID = "GlanceSettings.preferredDisplayID"
         static let preferredDisplayName = "GlanceSettings.preferredDisplayName"
         static let autoLockIntervalDays = "GlanceSettings.autoLockIntervalDays"
@@ -127,6 +128,9 @@ final class GlanceSettings {
     }
 
     @ObservationIgnored private let defaults = UserDefaults.standard
+    /// AppKit owns the actual status item. This callback keeps the persisted
+    /// preference independent from that UI lifecycle.
+    @ObservationIgnored private var menuBarVisibilityDidChange: ((Bool) -> Void)?
 
     var isFaceUnlockEnabled: Bool {
         didSet { defaults.set(isFaceUnlockEnabled, forKey: Key.isFaceUnlockEnabled) }
@@ -208,6 +212,21 @@ final class GlanceSettings {
     /// see `NotchOverlayView`'s hover handler and `.onChange(of: controller.phase)`.
     var hapticFeedbackEnabled: Bool {
         didSet { defaults.set(hapticFeedbackEnabled, forKey: Key.hapticFeedbackEnabled) }
+    }
+    /// Hiding the status item does not quit Glance; a relaunch still routes
+    /// through `AppDelegate.applicationShouldHandleReopen` to show Settings.
+    var showsInMenuBar: Bool {
+        didSet {
+            defaults.set(showsInMenuBar, forKey: Key.showsInMenuBar)
+            menuBarVisibilityDidChange?(showsInMenuBar)
+        }
+    }
+
+    /// Bound once by `AppDelegate` after AppKit has finished launching. The
+    /// initial call applies the stored preference as well as subsequent edits.
+    func bindMenuBarVisibility(_ handler: @escaping (Bool) -> Void) {
+        menuBarVisibilityDidChange = handler
+        handler(showsInMenuBar)
     }
 
     static let faceDetectionRange = 3...10
@@ -312,6 +331,9 @@ final class GlanceSettings {
             ?? 5
         autoRetryOnce = defaults.object(forKey: Key.autoRetryOnce) as? Bool ?? false
         hapticFeedbackEnabled = defaults.object(forKey: Key.hapticFeedbackEnabled) as? Bool ?? true
+        // Keep the icon available for existing and new installs unless the
+        // user explicitly opts into the background-only mode.
+        showsInMenuBar = defaults.object(forKey: Key.showsInMenuBar) as? Bool ?? true
         preferredDisplayID = defaults.string(forKey: Key.preferredDisplayID)
         preferredDisplayName = defaults.string(forKey: Key.preferredDisplayName)
 

@@ -92,6 +92,10 @@ struct GeneralSettingsPage: View {
                     ))
                 }
                 SettingsGroupDivider()
+                SettingsRowContent(title: "Show in menu bar") {
+                    GlanceToggle(isOn: $settings.showsInMenuBar)
+                }
+                SettingsGroupDivider()
                 SettingsRowContent(title: "Enable Face Unlock") {
                     GlanceToggle(isOn: $coordinator.isEnabled)
                 }
