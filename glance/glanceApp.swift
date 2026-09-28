@@ -154,16 +154,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// One-time catch-up for users who completed onboarding before the security-notice step
-    /// existed — same accessory/window-closing treatment as `presentOnboardingGate()`, but
-    /// resumes straight into the updater afterward instead of revealing Settings, since setup
-    /// itself is already done.
+    /// existed
     private func presentPostUpdateSecurityNotice() {
         for window in NSApp.windows where window.canBecomeMain {
             window.close()
         }
         NSApp.setActivationPolicy(.accessory)
-        // Reachable repeatedly — every gated menu action re-enters here while unacknowledged.
-        // A fresh `startPostUpdateNotice()` would just replace the one already on screen.
         guard NotchOverlayController.shared.phase != .onboarding else { return }
         OnboardingController.startPostUpdateNotice { [weak self] in
             self?.startUpdaterIfNeeded()
@@ -220,10 +216,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return false
     }
 
-    /// A Dock click must not create the Settings window — that produced a duplicate Recents icon. If already open, the default
-    /// reopen behavior just brings it forward.
+    /// Reopening the already-running app from Finder, Spotlight, or the Dock is
+    /// an intentional request for Settings.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        return flag
+        revealSettingsWindow()
+        return false
     }
 
     /// Menu bar "Settings" — the only user-facing way to open the window after onboarding.
@@ -233,8 +230,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// True whenever an updated user hasn't acknowledged the post-update security notice yet.
-    /// Checked by every menu-bar action that would otherwise let them use the app — Settings,
-    /// locking/unlocking — before the notice has been seen.
     private var isBlockedByPostUpdateNotice: Bool {
         GlanceSettings.shared.hasCompletedOnboarding && !GlanceSettings.shared.hasAcknowledgedSecurityNotice
     }
