@@ -1001,6 +1001,10 @@ final class OnboardingController {
     // MARK: - Password
 
     func finish(password: String) async -> Bool {
+        // The default Confirm button and the SecureField's Return handler can
+        // arrive back-to-back. Keep password replacement and any enrollment
+        // commit single-flight even before SwiftUI has redrawn the disabled UI.
+        guard !isSavingPassword else { return false }
         let trimmed = password
         guard !trimmed.isEmpty else {
             passwordError = "Enter a password."
