@@ -11,16 +11,27 @@ import Observation
 
 /// How long the Touch-ID-unlocked session may sit idle before it re-locks.
 enum AutoLockInterval: Int, CaseIterable, Identifiable {
-    case oneDay = 1
     case sevenDays = 7
     case fourteenDays = 14
     case thirtyDays = 30
+    case never = 0
 
     var id: Int { rawValue }
 
-    var title: String { rawValue == 1 ? "1 day" : "\(rawValue) days" }
+    var title: String {
+        switch self {
+        case .never: return "Never"
+        case .sevenDays: return "7 days"
+        case .fourteenDays: return "14 days"
+        case .thirtyDays: return "30 days"
+        }
+    }
 
-    var duration: TimeInterval { TimeInterval(rawValue) * 24 * 60 * 60 }
+    /// `nil` means the session stays open until the app exits or the user
+    /// explicitly locks it; the session key itself is never persisted in memory.
+    var duration: TimeInterval? {
+        self == .never ? nil : TimeInterval(rawValue) * 24 * 60 * 60
+    }
 
     /// Position in `allCases`, used to drive the discrete 4-stop slider.
     var sliderIndex: Double {
@@ -29,7 +40,7 @@ enum AutoLockInterval: Int, CaseIterable, Identifiable {
 
     static func from(sliderIndex: Double) -> AutoLockInterval {
         let clamped = Int(sliderIndex.rounded())
-        return allCases.indices.contains(clamped) ? allCases[clamped] : .sevenDays
+        return allCases.indices.contains(clamped) ? allCases[clamped] : .thirtyDays
     }
 }
 
@@ -304,10 +315,9 @@ final class GlanceSettings {
         preferredDisplayID = defaults.string(forKey: Key.preferredDisplayID)
         preferredDisplayName = defaults.string(forKey: Key.preferredDisplayName)
 
-        // Defaults to 7 days — long enough not to nag daily users, short
-        // enough not to leave an abandoned session live indefinitely.
+        // Defaults to 30 days
         autoLockInterval = (defaults.object(forKey: Key.autoLockIntervalDays) as? Int)
-            .flatMap(AutoLockInterval.init(rawValue:)) ?? .sevenDays
+            .flatMap(AutoLockInterval.init(rawValue:)) ?? .thirtyDays
         defaultCameraID = defaults.string(forKey: Key.defaultCameraID)
         builtInDisplayCameraID = defaults.string(forKey: Key.builtInDisplayCameraID)
         externalDisplayCameraID = defaults.string(forKey: Key.externalDisplayCameraID)
