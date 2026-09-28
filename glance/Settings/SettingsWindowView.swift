@@ -7,6 +7,7 @@
 //  the session lock button) and a floating tab bar pinned to the bottom.
 //
 
+import AppKit
 import SwiftUI
 
 /// A closure `onPreferenceChange` can actually consume — that API requires
@@ -75,6 +76,14 @@ struct SettingsWindowView: View {
         // NSWindow out, keeping `@State` alive, so without this `selection`
         // would remember the last tab instead of resetting to General.
         .onDisappear { selection = .general }
+        // A native swipe-event monitor observes the hosting window so it
+        // recognizes two-finger trackpad swipes across the full Settings UI,
+        // including the header, page content, and tab bar.
+        .background(
+            SettingsTabSwipeRecognizer { direction in
+                selectAdjacentTab(for: direction)
+            }
+        )
     }
 
     /// The header and tab bar float over the scroll content as overlays so
@@ -167,5 +176,117 @@ struct SettingsWindowView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func selectAdjacentTab(for direction: SettingsTabSwipeDirection) {
+        let tabs = SettingsTab.visibleTabs(includingDebug: environment.isDebugSectionRevealed)
+        guard let currentIndex = tabs.firstIndex(of: selection) else { return }
+
+        let adjacentIndex: Int
+        switch direction {
+        case .left:
+            adjacentIndex = currentIndex + 1
+        case .right:
+            adjacentIndex = currentIndex - 1
+        }
+
+        guard tabs.indices.contains(adjacentIndex) else { return }
+        withAnimation(SettingsMetrics.tabSelectionAnimation) {
+            selection = tabs[adjacentIndex]
+        }
+    }
+}
+
+private enum SettingsTabSwipeDirection {
+    case left
+    case right
+}
+
+/// Observes horizontal trackpad scroll gestures for this Settings window. Unlike
+/// a transparent SwiftUI `DragGesture`, this does not compete with buttons or
+/// vertical scrolling.
+private struct SettingsTabSwipeRecognizer: NSViewRepresentable {
+    let onSwipe: (SettingsTabSwipeDirection) -> Void
+
+    func makeNSView(context: Context) -> SwipeHostingView {
+        SwipeHostingView(onSwipe: onSwipe)
+    }
+
+    func updateNSView(_ view: SwipeHostingView, context: Context) {
+        view.onSwipe = onSwipe
+        view.installEventMonitorIfNeeded()
+    }
+}
+
+private final class SwipeHostingView: NSView {
+    var onSwipe: (SettingsTabSwipeDirection) -> Void
+    private var eventMonitor: Any?
+    private var accumulatedHorizontalScroll: CGFloat = 0
+    private var accumulatedVerticalScroll: CGFloat = 0
+    private var didNavigateThisGesture = false
+
+    /// Prevents a small diagonal scroll from switching pages, while remaining
+    /// comfortably below the distance of an intentional two-finger swipe.
+    private let swipeDistanceThreshold: CGFloat = 36
+
+    init(onSwipe: @escaping (SettingsTabSwipeDirection) -> Void) {
+        self.onSwipe = onSwipe
+        super.init(frame: .zero)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        installEventMonitorIfNeeded()
+    }
+
+    func installEventMonitorIfNeeded() {
+        guard eventMonitor == nil else { return }
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, event.window === self.window, event.hasPreciseScrollingDeltas else {
+                return event
+            }
+            self.handleTrackpadScroll(event)
+            return event
+        }
+    }
+
+    private func handleTrackpadScroll(_ event: NSEvent) {
+        if event.phase == .began || event.phase == .mayBegin {
+            resetSwipeTracking()
+        }
+
+        guard !didNavigateThisGesture else {
+            // Do not reset at `.ended`: the same physical swipe can still emit
+            // momentum events, which must not advance a second page.
+            return
+        }
+
+        accumulatedHorizontalScroll += event.scrollingDeltaX
+        accumulatedVerticalScroll += event.scrollingDeltaY
+
+        let horizontalDistance = abs(accumulatedHorizontalScroll)
+        let verticalDistance = abs(accumulatedVerticalScroll)
+        guard horizontalDistance >= swipeDistanceThreshold,
+              horizontalDistance > verticalDistance * 1.5
+        else { return }
+
+        didNavigateThisGesture = true
+        onSwipe(accumulatedHorizontalScroll < 0 ? .left : .right)
+    }
+
+    private func resetSwipeTracking() {
+        accumulatedHorizontalScroll = 0
+        accumulatedVerticalScroll = 0
+        didNavigateThisGesture = false
+    }
+
+    deinit {
+        if let eventMonitor {
+            NSEvent.removeMonitor(eventMonitor)
+        }
     }
 }
