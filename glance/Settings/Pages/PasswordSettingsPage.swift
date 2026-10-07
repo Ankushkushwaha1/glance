@@ -75,14 +75,35 @@ struct PasswordSettingsPage: View {
     // MARK: - Locked
 
     private var lockedState: some View {
-        SettingsEmptyStateView(
-            icon: "lock.fill",
-            message: "Session locked",
-            buttonTitle: isUnlocking ? "Authenticating…" : "Unlock session",
-            isButtonEnabled: !isUnlocking,
-            caption: sessionError,
-            action: unlock
-        )
+        VStack(spacing: SettingsMetrics.emptyStateSpacing) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: SettingsMetrics.emptyStateIconSize, weight: .regular))
+                .foregroundStyle(SettingsMetrics.textTertiary)
+
+            Text("Session locked")
+                .font(SettingsMetrics.rowFont)
+                .foregroundStyle(SettingsMetrics.textSecondary)
+
+            SettingsPrimaryButton(
+                title: isUnlocking ? "Authenticating…" : "Unlock session",
+                isEnabled: !isUnlocking,
+                action: unlock
+            )
+
+            if let sessionError {
+                VStack(spacing: 8) {
+                    SettingsCaption(text: sessionError)
+                        .multilineTextAlignment(.center)
+                    Button("Reset Glance Data & Start Fresh") {
+                        pocController.forceResetCredentials()
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(GlanceTheme.accent)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: SettingsMetrics.emptyStateMinHeight)
     }
 
     // MARK: - Unlocked

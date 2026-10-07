@@ -36,6 +36,14 @@ final class POCController {
         isSessionUnlocked = SecureCredentialManager.isSessionUnlocked
     }
 
+    /// Wipes stale stored credentials and face store when the session key is missing or corrupted.
+    func forceResetCredentials() {
+        try? SecureCredentialManager.deletePassword()
+        SecureFaceStore.deleteAll()
+        sessionError = nil
+        refreshCredentialStatus()
+    }
+
     // MARK: - Session (Touch ID gate)
 
     /// Must succeed before `savePassword()` or `injectStoredPassword()` will do anything.
