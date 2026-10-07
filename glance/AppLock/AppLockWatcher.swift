@@ -93,8 +93,8 @@ final class AppLockWatcher {
     private func consider(_ app: NSRunningApplication, isActivation: Bool = false) {
         guard let bundleId = app.bundleIdentifier else { return }
         
-        // Check if the app is locked
-        let isLocked = GlanceSettings.shared.lockedAppBundleIDs.contains(bundleId)
+        // Check if the app is locked using LockedAppStore
+        let isLocked = LockedAppStore.shared.isEnabled && LockedAppStore.shared.isLocked(bundleId)
         guard isLocked else { return }
         
         if isActivation || app.isActive {

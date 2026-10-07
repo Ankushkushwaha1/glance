@@ -15,4 +15,26 @@ public enum RelockPolicy: Codable, Equatable, Sendable, Hashable {
     case afterMinutes(Int)
     /// Relocks N minutes after losing focus; returning before resets the timer.
     case afterFocusLossMinutes(Int)
+
+    public var title: String {
+        switch self {
+        case .everyTime:
+            return "Every time"
+        case .afterMinutes(let mins):
+            return "After \(mins) minute\(mins == 1 ? "" : "s")"
+        case .afterFocusLossMinutes(let mins):
+            return "After \(mins) min of inactivity"
+        }
+    }
+
+    public var shortTitle: String {
+        switch self {
+        case .everyTime:
+            return "Every time"
+        case .afterMinutes(let mins):
+            return "After \(mins)m"
+        case .afterFocusLossMinutes(let mins):
+            return "After \(mins)m away"
+        }
+    }
 }

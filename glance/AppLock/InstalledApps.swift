@@ -21,6 +21,10 @@ public struct DiscoveredApp: Identifiable, Equatable {
 public enum InstalledApps {
     /// Scans standard application directories to find installed .app bundles.
     public static func scanApps() -> [DiscoveredApp] {
+        return discover()
+    }
+
+    public static func discover() -> [DiscoveredApp] {
         let fileManager = FileManager.default
         let searchPaths = [
             "/Applications",

@@ -279,17 +279,10 @@ struct AppLockSettingsPage: View {
             ))
         }) {
             HStack(spacing: 12) {
-                if let icon = app.icon {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .frame(width: 32, height: 32)
-                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                } else {
-                    Image(systemName: "app.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 32)
-                }
+                Image(nsImage: app.icon)
+                    .resizable()
+                    .frame(width: 32, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
 
                 Text(app.name)
                     .font(.system(size: 13))
