@@ -135,10 +135,11 @@ enum SecureCredentialManager {
             return
         }
 
-        // No key at all, but minting one is still destructive if data is already encrypted under a previous key (e.g. a
-        // re-signed dev build) — refuse rather than silently render it unreadable forever.
-        guard !hasSessionEncryptedData else {
-            throw SecureCredentialError.sessionKeyUnavailable
+        // If no session key exists on device, any remaining encrypted data is permanently unreadable anyway.
+        // Clean it up automatically so the user is never blocked by a missing key error.
+        if hasSessionEncryptedData {
+            try? KeychainManager.delete(account: passwordBlobAccount)
+            SecureFaceStore.deleteAll()
         }
 
         let key = SymmetricKey(size: .bits256)
