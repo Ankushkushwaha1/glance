@@ -55,7 +55,13 @@ enum SecureCredentialManager {
 
     nonisolated static var isSessionUnlocked: Bool {
         sessionLock.lock(); defer { sessionLock.unlock() }
-        return _cachedKey != nil
+        if _cachedKey != nil { return true }
+        if let keyData = try? KeychainManager.read(account: sessionKeyAccount) {
+            _cachedKey = SymmetricKey(data: keyData)
+            _lastActivityAt = Date()
+            return true
+        }
+        return false
     }
 
     /// `nil` whenever the session is locked — there is no activity to age.
@@ -66,7 +72,14 @@ enum SecureCredentialManager {
 
     nonisolated private static func cachedKey() -> SymmetricKey? {
         sessionLock.lock(); defer { sessionLock.unlock() }
-        return _cachedKey
+        if let key = _cachedKey { return key }
+        if let keyData = try? KeychainManager.read(account: sessionKeyAccount) {
+            let key = SymmetricKey(data: keyData)
+            _cachedKey = key
+            _lastActivityAt = Date()
+            return key
+        }
+        return nil
     }
 
     nonisolated private static func setCachedKey(_ key: SymmetricKey?) {

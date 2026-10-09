@@ -76,7 +76,11 @@ public final class LockedAppStore {
     
     /// Checks if a given bundle identifier is currently in the locked list.
     public func isLocked(_ bundleID: String) -> Bool {
-        return apps.contains { $0.bundleID == bundleID }
+        let cleanID = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+        return apps.contains {
+            $0.bundleID.caseInsensitiveCompare(cleanID) == .orderedSame ||
+            cleanID.hasPrefix($0.bundleID)
+        }
     }
     
     /// Updates the relock policy for a specific app.
