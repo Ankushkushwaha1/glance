@@ -63,14 +63,12 @@ enum KeystrokeInjector {
         try postReturn(source: source)
     }
 
-    /// Wipes anything already typed into the focused field: ⌘→ to the end,
-    /// then ⌘⌫ to delete back to the start. Both are positional keys, so this
-    /// behaves the same on every keyboard layout without alert beeps.
+    /// Selects any existing text in the focused field (⌘A) silently without
+    /// producing macOS alert sounds on empty text fields. The subsequent
+    /// password typing immediately replaces any selected text.
     private nonisolated static func clearFocusedField(source: CGEventSource?) throws {
-        let rightArrow: CGKeyCode = 0x7C
-        let delete: CGKeyCode = 0x33
-        try postKey(rightArrow, flags: .maskCommand, source: source)
-        try postKey(delete, flags: .maskCommand, source: source)
+        let keyA: CGKeyCode = 0x00
+        try postKey(keyA, flags: .maskCommand, source: source)
     }
 
     /// Posts a virtual key down/up, wrapped in a real ⌘ down/up when `flags`
