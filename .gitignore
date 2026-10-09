@@ -5,6 +5,7 @@ build_output/
 *.noindex/
 DerivedData/
 *.xcuserstate
+*.dmg
 
 # Xcode per-user state (schemes, breakpoints)
 xcuserdata/

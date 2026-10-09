@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Ankushkushwaha1/iFace/releases">
-    <img src="assets/download_for_mac.png" alt="Download iFace for Mac" width="220">
+  <a href="https://github.com/Ankushkushwaha1/iFace/releases/latest/download/iFace.dmg" target="_self">
+    <img src="assets/download_for_mac.png" alt="Download iFace for Mac" width="230">
   </a>
 </p>
 
@@ -65,6 +65,16 @@ Your password is encrypted locally using AES-256 and protected by Apple Keychain
 - macOS 15 Sequoia or later
 - Apple Silicon (M1/M2/M3/M4) or Intel Mac
 - Built-in FaceTime HD camera or external webcam
+
+<p align="center">
+  <a href="https://github.com/Ankushkushwaha1/iFace/releases/latest/download/iFace.dmg" target="_self">
+    <img width="230" src="assets/download_for_mac.png" alt="Download iFace for Mac" />
+  </a>
+</p>
+
+1. Download **`iFace.dmg`** using the button above.
+2. Open the `.dmg` file and drag **iFace** to your **Applications** folder.
+3. Open **iFace** from Launchpad or Applications and follow the guided setup.
 
 ### Permissions Required
 * **Camera**: Required to verify your face. Processed strictly in memory and never saved to disk.
