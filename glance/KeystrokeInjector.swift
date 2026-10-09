@@ -55,33 +55,22 @@ enum KeystrokeInjector {
             throw KeystrokeError.eventCreationFailed
         }
         let source = CGEventSource(stateID: .hidSystemState)
-
-        // 1. Dismiss any overlay or screensaver and wake the lock screen password field
-        let escapeKey: CGKeyCode = 0x35
-        let spaceKey: CGKeyCode = 0x31
-        let backspaceKey: CGKeyCode = 0x33
-        
-        try? postKey(escapeKey, flags: [], source: source)
-        Thread.sleep(forTimeInterval: 0.10)
-        
-        try? postKey(spaceKey, flags: [], source: source)
-        // Allow macOS loginwindow clock-to-password animation to complete and focus text field
-        Thread.sleep(forTimeInterval: 0.35)
-
-        // 2. Clear any stray characters reliably via backspaces (standard Cocoa loginwindow doesn't support Cmd+Delete)
-        for _ in 0..<25 {
-            try? postKey(backspaceKey, flags: [], source: source)
-        }
         Thread.sleep(forTimeInterval: 0.05)
-
-        // 3. Type password in Unicode batches
+        try clearFocusedField(source: source)
+        Thread.sleep(forTimeInterval: 0.04)
         try postUnicodeText(text, source: source)
-        Thread.sleep(forTimeInterval: 0.10)
-
-        // 4. Press Return to unlock
+        Thread.sleep(forTimeInterval: 0.06)
         try postReturn(source: source)
-        Thread.sleep(forTimeInterval: 0.10)
-        try? postReturn(source: source)
+    }
+
+    /// Wipes anything already typed into the focused field: ⌘→ to the end,
+    /// then ⌘⌫ to delete back to the start. Both are positional keys, so this
+    /// behaves the same on every keyboard layout without alert beeps.
+    private nonisolated static func clearFocusedField(source: CGEventSource?) throws {
+        let rightArrow: CGKeyCode = 0x7C
+        let delete: CGKeyCode = 0x33
+        try postKey(rightArrow, flags: .maskCommand, source: source)
+        try postKey(delete, flags: .maskCommand, source: source)
     }
 
     /// Posts a virtual key down/up, wrapped in a real ⌘ down/up when `flags`

@@ -207,7 +207,7 @@ struct PasswordSettingsPage: View {
             isSaving = false
             inlinePassword = ""
             isChangingPassword = false
-            statusMessage = "Mac password saved and encrypted successfully."
+            statusMessage = pocController.statusMessage
             FaceEnrollmentStore.shared.reloadIfUnlocked()
         }
     }
@@ -225,7 +225,7 @@ struct PasswordSettingsPage: View {
             testCountdown = 0
             await pocController.injectStoredPassword(requireAuthoritativeLock: false)
             isTestingUnlock = false
-            statusMessage = "Test keystrokes injected."
+            statusMessage = pocController.statusMessage
         }
     }
 

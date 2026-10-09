@@ -39,17 +39,8 @@ enum KeychainManager {
 
     /// Attributes-only existence check — never prompts, even for access-controlled items.
     nonisolated static func exists(account: String) -> Bool {
-        if checkExists(service: service, account: account) {
-            return true
-        }
-        if checkExists(service: legacyService, account: account) {
-            // Auto-migrate from legacy service
-            if let data = try? readFrom(service: legacyService, account: account) {
-                try? save(account: account, data: data)
-            }
-            return true
-        }
-        return false
+        return checkExists(service: service, account: account) ||
+               checkExists(service: legacyService, account: account)
     }
 
     nonisolated private static func checkExists(service: String, account: String) -> Bool {
