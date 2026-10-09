@@ -8,6 +8,9 @@ DerivedData/
 
 # Xcode per-user state (schemes, breakpoints)
 xcuserdata/
+*.xcuserdatad/
+*.xcodeproj/xcuserdata/
+
 
 # Compiled Core ML models are derived from the committed .mlpackage source
 *.mlmodelc

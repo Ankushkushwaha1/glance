@@ -15,6 +15,17 @@
   <img src="https://img.shields.io/badge/Swift-SwiftUI-black.svg" alt="Swift">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Ankushkushwaha1/iFace/releases">
+    <img src="assets/download_for_mac.png" alt="Download iFace for Mac" width="220">
+  </a>
+</p>
+
+<!-- ======================================================== -->
+<!-- DEMO VIDEO: Paste your video link or drop your video below -->
+<!-- https://github.com/user-attachments/assets/YOUR-VIDEO-ID -->
+<!-- ======================================================== -->
+
 **iFace** brings the seamless Apple Face ID experience to macOS. Unlock your Mac automatically with a single glance and protect your private applications behind instant biometric verification — no typing passwords or reaching for the keyboard.
 
 Everything runs **100% on-device** using Apple's Vision and Core ML frameworks with hardware-backed encryption. The UI integrates directly into your MacBook's notch with fluid, Dynamic Island-style animations.
@@ -68,7 +79,7 @@ git clone https://github.com/Ankushkushwaha1/iFace.git
 cd iFace
 
 # 2. Open the Xcode project
-open glance.xcodeproj
+open iFace.xcodeproj
 
 # 3. Build & Run
 # Press Cmd + R in Xcode
