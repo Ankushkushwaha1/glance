@@ -10,5 +10,9 @@
 	<string>https://tryglance.app/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>o9uQmlzKzh7NZvFtVktVh/wqw4Ie6WshX8K8NFDweWY=</string>
+	<key>CFBundleDisplayName</key>
+	<string>iFace</string>
+	<key>CFBundleName</key>
+	<string>iFace</string>
 </dict>
 </plist>

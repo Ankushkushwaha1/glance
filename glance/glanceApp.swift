@@ -26,7 +26,7 @@ struct glanceApp: App {
         DispatchQueue.main.async {
             delegate.bindOpenWindowAction { open(id: "settings") }
         }
-        return Window("Glance Settings", id: "settings") {
+        return Window("iFace Settings", id: "settings") {
             SettingsWindowView(environment: appDelegate.environment)
                 .onAppear {
                     delegate.bindOpenWindowAction { open(id: "settings") }
