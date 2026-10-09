@@ -17,7 +17,7 @@ enum KeystrokeError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .accessibilityNotGranted:
-            return "Accessibility permission required. Open System Settings → Privacy & Security → Accessibility and enable glance."
+            return "Accessibility permission required. Open System Settings → Privacy & Security → Accessibility and enable iFace."
         case .eventCreationFailed:
             return "Couldn't create CGEvent for keystroke."
         }
@@ -56,34 +56,32 @@ enum KeystrokeInjector {
         }
         let source = CGEventSource(stateID: .hidSystemState)
 
-        // 1. Wake the lock screen and focus the password text box
-        // On macOS Sonoma & Sequoia, a Space tap awakens the login window clock
-        try postKey(0x31, flags: [], source: source)
-        Thread.sleep(forTimeInterval: 0.15)
+        // 1. Dismiss any overlay or screensaver and wake the lock screen password field
+        let escapeKey: CGKeyCode = 0x35
+        let spaceKey: CGKeyCode = 0x31
+        let backspaceKey: CGKeyCode = 0x33
+        
+        try? postKey(escapeKey, flags: [], source: source)
+        Thread.sleep(forTimeInterval: 0.10)
+        
+        try? postKey(spaceKey, flags: [], source: source)
+        // Allow macOS loginwindow clock-to-password animation to complete and focus text field
+        Thread.sleep(forTimeInterval: 0.35)
 
-        // 2. Clear any stray characters (including the space we just typed)
-        try clearFocusedField(source: source)
-        Thread.sleep(forTimeInterval: 0.04)
+        // 2. Clear any stray characters reliably via backspaces (standard Cocoa loginwindow doesn't support Cmd+Delete)
+        for _ in 0..<25 {
+            try? postKey(backspaceKey, flags: [], source: source)
+        }
+        Thread.sleep(forTimeInterval: 0.05)
 
         // 3. Type password in Unicode batches
         try postUnicodeText(text, source: source)
-        Thread.sleep(forTimeInterval: 0.08)
+        Thread.sleep(forTimeInterval: 0.10)
 
         // 4. Press Return to unlock
         try postReturn(source: source)
-        Thread.sleep(forTimeInterval: 0.05)
-    }
-
-    /// Wipes anything already typed into the focused field (e.g. a stray keypress
-    /// on the lock screen) so it isn't prepended to the password: ⌘→ to the end,
-    /// then ⌘⌫ to delete back to the start. Both are positional keys, so this
-    /// behaves the same on every keyboard layout — unlike ⌘A, whose "A" moves.
-    private nonisolated static func clearFocusedField(source: CGEventSource?) throws {
-        let rightArrow: CGKeyCode = 0x7C
-        let delete: CGKeyCode = 0x33
-        try postKey(rightArrow, flags: .maskCommand, source: source)
-        try postKey(delete, flags: .maskCommand, source: source)
-        try postKey(delete, flags: [], source: source)
+        Thread.sleep(forTimeInterval: 0.10)
+        try? postReturn(source: source)
     }
 
     /// Posts a virtual key down/up, wrapped in a real ⌘ down/up when `flags`

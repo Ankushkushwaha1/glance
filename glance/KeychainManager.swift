@@ -35,9 +35,24 @@ enum KeychainError: LocalizedError {
 
 enum KeychainManager {
     nonisolated static let service = "com.ankush.iface"
+    nonisolated static let legacyService = "com.jonathan.glance"
 
     /// Attributes-only existence check — never prompts, even for access-controlled items.
     nonisolated static func exists(account: String) -> Bool {
+        if checkExists(service: service, account: account) {
+            return true
+        }
+        if checkExists(service: legacyService, account: account) {
+            // Auto-migrate from legacy service
+            if let data = try? readFrom(service: legacyService, account: account) {
+                try? save(account: account, data: data)
+            }
+            return true
+        }
+        return false
+    }
+
+    nonisolated private static func checkExists(service: String, account: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -47,7 +62,6 @@ enum KeychainManager {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == -34018 {
-            // Stale item requiring missing entitlement: purge it
             _ = SecItemDelete([
                 kSecClass as String: kSecClassGenericPassword,
                 kSecAttrService as String: service,
@@ -60,6 +74,18 @@ enum KeychainManager {
 
     /// Pass an `LAContext` to authorize a read on an access-controlled item — the OS presents the prompt during this call.
     nonisolated static func read(account: String, context: LAContext? = nil) throws -> Data {
+        do {
+            return try readFrom(service: service, account: account, context: context)
+        } catch KeychainError.itemNotFound {
+            // Try legacy service
+            let data = try readFrom(service: legacyService, account: account, context: context)
+            // Auto-migrate to current service
+            try? save(account: account, data: data)
+            return data
+        }
+    }
+
+    nonisolated private static func readFrom(service: String, account: String, context: LAContext? = nil) throws -> Data {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

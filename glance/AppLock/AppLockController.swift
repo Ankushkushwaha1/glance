@@ -8,6 +8,7 @@
 import AppKit
 import Foundation
 import Combine
+import AVFoundation
 
 @Observable @MainActor
 final class AppLockController {
@@ -44,6 +45,8 @@ final class AppLockController {
         hasStarted = false
     }
 
+    private var suppressingFocusLossForBundleID: String?
+
     // MARK: - Watcher Callbacks
 
     private func setupWatcher() {
@@ -63,7 +66,11 @@ final class AppLockController {
         }
 
         watcher.onFocusLost = { [weak self] bundleId in
-            self?.sessionBook.focusLost(bundleId)
+            guard let self else { return }
+            if self.suppressingFocusLossForBundleID == bundleId {
+                return
+            }
+            self.sessionBook.focusLost(bundleId)
         }
 
         watcher.onAppTerminated = { [weak self] bundleId in
@@ -93,6 +100,9 @@ final class AppLockController {
     private func startVerification(for app: NSRunningApplication) {
         isVerifying = true
         activeApp = app
+        if let bundleId = app.bundleIdentifier {
+            suppressingFocusLossForBundleID = bundleId
+        }
 
         // Steal focus immediately and hide the locked app
         NSApp.activate(ignoringOtherApps: true)
@@ -116,6 +126,17 @@ final class AppLockController {
         verificationTask = Task { [weak self] in
             guard let self else { return }
 
+            let status = AVCaptureDevice.authorizationStatus(for: .video)
+            if status == .notDetermined {
+                _ = await AVCaptureDevice.requestAccess(for: .video)
+            }
+
+            var identities = FaceEnrollmentStore.shared.activeIdentities
+            if identities.isEmpty {
+                FaceEnrollmentStore.shared.reloadIfUnlocked()
+                identities = FaceEnrollmentStore.shared.activeIdentities
+            }
+
             let pipeline = FaceRecognitionPipeline()
             let camera = CameraManager()
 
@@ -128,17 +149,17 @@ final class AppLockController {
 
                 // Wait for a frame
                 guard let frame = camera.currentFrame else {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    try? await Task.sleep(nanoseconds: 80_000_000)
                     continue
                 }
 
-                // Run recognition on a detached task (nonisolated) — capture primitives first so only Sendable values cross the boundary
+                // Run recognition on a detached task
                 let cgImage = frame.image
-                let identities = FaceEnrollmentStore.shared.activeIdentities
+                let currentIdentities = identities
                 let threshold = GlanceSettings.shared.matchThreshold
                 let matched = await Task.detached(priority: .userInitiated) {
                     guard let result = try? await pipeline.recognize(in: cgImage) else { return false }
-                    let scored = pipeline.score(result.embedding, against: identities)
+                    let scored = pipeline.score(result.embedding, against: currentIdentities)
                     return pipeline.bestMatch(in: scored, threshold: threshold) != nil
                 }.value
 
@@ -147,7 +168,7 @@ final class AppLockController {
                     break
                 }
 
-                try? await Task.sleep(nanoseconds: 200_000_000)
+                try? await Task.sleep(nanoseconds: 120_000_000)
             }
 
             camera.stop()
@@ -169,6 +190,12 @@ final class AppLockController {
 
         app.unhide()
         app.activate(options: .activateIgnoringOtherApps)
+
+        // Clear focus suppression after a brief debounce to allow unhide/activation events to settle
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            self?.suppressingFocusLossForBundleID = nil
+        }
 
         finishCurrentVerification()
     }

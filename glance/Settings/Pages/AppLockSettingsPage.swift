@@ -57,7 +57,7 @@ struct AppLockSettingsPage: View {
             SettingsGroup {
                 SettingsRowContent(
                     title: "App Lock",
-                    info: "Lock chosen apps behind face verification. When you open a locked app, Glance verifies your face before granting access."
+                    info: "Lock chosen apps behind face verification. When you open a locked app, iFace verifies your face before granting access."
                 ) {
                     GlanceToggle(isOn: $store.isEnabled)
                 }

@@ -20,6 +20,7 @@ final class AppLockWatcher {
     var onAppTerminated: ((String) -> Void)?
     
     private var cancellables = Set<AnyCancellable>()
+    private var pollTimer: Timer?
     
     func start() {
         guard cancellables.isEmpty else { return }
@@ -71,10 +72,25 @@ final class AppLockWatcher {
                 self?.onAppTerminated?(bundleId)
             }
             .store(in: &cancellables)
+
+        // 6. Check current frontmost app immediately
+        if let frontmost = NSWorkspace.shared.frontmostApplication {
+            consider(frontmost, isActivation: true)
+        }
+
+        // 7. Light check for unminimized Dock taps and background activations missed by notifications
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let frontmost = NSWorkspace.shared.frontmostApplication else { return }
+                self.consider(frontmost, isActivation: false)
+            }
+        }
     }
     
     func stop() {
         cancellables.removeAll()
+        pollTimer?.invalidate()
+        pollTimer = nil
     }
     
     private func consider(_ app: NSRunningApplication, isActivation: Bool = false) {

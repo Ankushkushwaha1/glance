@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 @main
 struct glanceApp: App {
@@ -82,6 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // SwiftUI can flip the app back to `.regular` while installing scenes even with `.suppressed`; re-assert accessory.
         NSApp.setActivationPolicy(.accessory)
+
+        // Ensure camera access is requested cleanly on launch if not determined
+        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .video) { _ in }
+        }
 
         // `object: nil` deliberately — the Settings window may not exist yet (SwiftUI creates scene content lazily), and this
         // still matches it by identity in the handler below once it does close.

@@ -1,6 +1,8 @@
 # Xcode build products / derived data
 build/
 build_output/
+.build_noindex/
+*.noindex/
 DerivedData/
 *.xcuserstate
 

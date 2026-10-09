@@ -298,6 +298,26 @@ final class GlanceSettings {
     }
 
     private init() {
+        // Migrate legacy preferences from com.jonathan.glance if needed
+        if let legacyDefaults = UserDefaults(suiteName: "com.jonathan.glance") {
+            let legacyKeys = [
+                Key.isFaceUnlockEnabled, Key.matchThreshold, Key.livenessChecksEnabled,
+                Key.livenessMode, Key.minimumFaceWidth, Key.unlockAnimationStyle,
+                Key.showUnlockAnimation, Key.unlockTriggers, Key.retryOnHover,
+                Key.faceDetectionSeconds, Key.autoRetryOnce, Key.hapticFeedbackEnabled,
+                Key.showsInMenuBar, Key.preferredDisplayID, Key.preferredDisplayName,
+                Key.autoLockIntervalDays, Key.defaultCameraID, Key.builtInDisplayCameraID,
+                Key.externalDisplayCameraID, Key.hasCompletedOnboarding,
+                Key.hasAcknowledgedSecurityNotice, Key.isAppLockEnabled, Key.defaultRelockPolicy,
+                "appLock.apps", "appLock.enabled"
+            ]
+            for key in legacyKeys {
+                if defaults.object(forKey: key) == nil, let val = legacyDefaults.object(forKey: key) {
+                    defaults.set(val, forKey: key)
+                }
+            }
+        }
+
         // Enabled by default — onboarding already enrolled a face and set a
         // password specifically to use Face Unlock.
         isFaceUnlockEnabled = defaults.object(forKey: Key.isFaceUnlockEnabled) as? Bool ?? true
