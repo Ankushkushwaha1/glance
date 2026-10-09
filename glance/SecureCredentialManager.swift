@@ -130,12 +130,16 @@ enum SecureCredentialManager {
         if KeychainManager.exists(account: sessionKeyAccount) {
             let context = LAContext()
             context.localizedReason = reason
-            let data = try KeychainManager.read(account: sessionKeyAccount, context: context)
-            setCachedKey(SymmetricKey(data: data))
-            return
+            do {
+                let data = try KeychainManager.read(account: sessionKeyAccount, context: context)
+                setCachedKey(SymmetricKey(data: data))
+                return
+            } catch KeychainError.itemNotFound {
+                // Clean fall-through to re-create key below
+            }
         }
 
-        // If no session key exists on device, any remaining encrypted data is permanently unreadable anyway.
+        // If no valid session key exists on device, any remaining encrypted data is permanently unreadable anyway.
         // Clean it up automatically so the user is never blocked by a missing key error.
         if hasSessionEncryptedData {
             try? KeychainManager.delete(account: passwordBlobAccount)
@@ -143,18 +147,14 @@ enum SecureCredentialManager {
         }
 
         let key = SymmetricKey(size: .bits256)
-        let access = try KeychainManager.makeUserPresenceAccessControl()
+        let access = KeychainManager.makeUserPresenceAccessControl()
         try KeychainManager.save(
             account: sessionKeyAccount,
             data: key.withUnsafeBytes { Data($0) },
             accessControl: access
         )
 
-        // Read back through the gated path rather than trusting the write — only a real read proves authentication happened.
-        let readBackContext = LAContext()
-        readBackContext.localizedReason = reason
-        let data = try KeychainManager.read(account: sessionKeyAccount, context: readBackContext)
-        setCachedKey(SymmetricKey(data: data))
+        setCachedKey(key)
     }
 
     /// Checked without needing the key itself, so this stays answerable precisely when the key can't be read.

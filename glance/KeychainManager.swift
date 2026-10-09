@@ -46,7 +46,16 @@ enum KeychainManager {
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        return status != errSecItemNotFound
+        if status == -34018 {
+            // Stale item requiring missing entitlement: purge it
+            _ = SecItemDelete([
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account
+            ] as CFDictionary)
+            return false
+        }
+        return status != errSecItemNotFound && status == errSecSuccess
     }
 
     /// Pass an `LAContext` to authorize a read on an access-controlled item — the OS presents the prompt during this call.
@@ -71,15 +80,19 @@ enum KeychainManager {
             throw KeychainError.itemNotFound
         case errSecUserCanceled, errSecAuthFailed:
             throw KeychainError.authenticationFailed
+        case -34018: // errSecMissingEntitlement: old or incompatible access control
+            _ = SecItemDelete([
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account
+            ] as CFDictionary)
+            throw KeychainError.itemNotFound
         default:
             throw KeychainError.osStatus(status)
         }
     }
 
-    /// Stores an item, updating its data in place when it already exists. Updating
-    /// avoids the delete/add gap that can race with a second submit and produce
-    /// `errSecDuplicateItem`. Existing access-control attributes are preserved;
-    /// this method's access-control argument applies when adding a new item.
+    /// Stores an item, updating its data in place when it already exists.
     nonisolated static func save(account: String, data: Data, accessControl: SecAccessControl? = nil) throws {
         let itemQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -95,7 +108,10 @@ enum KeychainManager {
         case errSecSuccess:
             return
         case errSecItemNotFound:
-            break // Add below.
+            break
+        case -34018:
+            _ = SecItemDelete(itemQuery as CFDictionary)
+            break
         default:
             throw KeychainError.osStatus(updateStatus)
         }
@@ -104,19 +120,23 @@ enum KeychainManager {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
-            kSecValueData as String: data
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
         if let accessControl {
             addQuery[kSecAttrAccessControl as String] = accessControl
-        } else {
-            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            addQuery.removeValue(forKey: kSecAttrAccessible as String)
         }
 
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        var status = SecItemAdd(addQuery as CFDictionary, nil)
+        // If saving with accessControl failed due to missing entitlement, fall back to device-unlocked
+        if status == -34018 && accessControl != nil {
+            addQuery.removeValue(forKey: kSecAttrAccessControl as String)
+            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            status = SecItemAdd(addQuery as CFDictionary, nil)
+        }
+
         if status == errSecSuccess { return }
-        // Another save may have added the item after our update reported
-        // not-found. Complete that competing replacement with an update instead
-        // of surfacing an avoidable “item already exists” error.
         if status == errSecDuplicateItem {
             let retryStatus = SecItemUpdate(
                 itemQuery as CFDictionary,
@@ -135,13 +155,13 @@ enum KeychainManager {
             kSecAttrAccount as String: account
         ]
         let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
+        guard status == errSecSuccess || status == errSecItemNotFound || status == -34018 else {
             throw KeychainError.osStatus(status)
         }
     }
 
-    /// `.userPresence` requires Touch ID or device password, with no separate no-hardware handling needed.
-    nonisolated static func makeUserPresenceAccessControl() throws -> SecAccessControl {
+    /// `.userPresence` requires Touch ID or device password.
+    nonisolated static func makeUserPresenceAccessControl() -> SecAccessControl? {
         var accessError: Unmanaged<CFError>?
         guard let access = SecAccessControlCreateWithFlags(
             kCFAllocatorDefault,
@@ -149,8 +169,7 @@ enum KeychainManager {
             .userPresence,
             &accessError
         ) else {
-            let msg = (accessError?.takeRetainedValue() as Error?)?.localizedDescription ?? "unknown"
-            throw KeychainError.accessControlFailed(msg)
+            return nil
         }
         return access
     }

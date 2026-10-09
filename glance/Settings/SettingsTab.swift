@@ -42,7 +42,7 @@ enum SettingsTab: String, CaseIterable, Identifiable, Hashable {
         case .password: return .system("lock.fill")
         case .camera: return .system("video.fill")
         case .recognition: return .system("sparkle")
-        case .appLock: return .system("lock.app.fill")
+        case .appLock: return .system("lock.shield.fill")
         case .about: return .system("info.circle.fill")
         case .debugFaceLab: return .system("flask")
         }
