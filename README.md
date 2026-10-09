@@ -103,6 +103,16 @@ open iFace.xcodeproj
 
 ---
 
+## Contributing
+
+Contributions, feature suggestions, and bug reports are warmly welcomed!
+
+* **Got an idea or bug report?** Open an [Issue](https://github.com/Ankushkushwaha1/iFace/issues).
+* **Want to contribute code?** Fork the repository, create a feature branch, and submit a **Pull Request**.
+* Check out the [Contributing Guidelines](CONTRIBUTING.md) for full details on setting up and submitting changes.
+
+---
+
 ## Acknowledgements
 
 - **[The Boring Notch](https://github.com/TheBoredTeam/boring.notch)** — Notch window physics inspiration.
