@@ -1,8 +1,8 @@
 //
 //  glanceApp.swift
-//  glance
+//  iFace
 //
-//  Created by Jonathan Zhou on 2026-07-21.
+//  Created by Ankush Kushwaha.
 //
 
 import SwiftUI

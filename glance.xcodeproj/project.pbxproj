@@ -284,15 +284,15 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = glance/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "glance uses the camera on-device to recognize your face for unlocking your Mac, and to let you enroll and preview your face in Settings.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "iFace uses the camera on-device to recognize your face for unlocking your Mac, and to let you enroll and preview your face in Settings.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Ankush Kushwaha. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.2;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jonathan.glance;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankush.iface;
+				PRODUCT_NAME = iFace;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -320,15 +320,15 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = glance/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "glance uses the camera on-device to recognize your face for unlocking your Mac, and to let you enroll and preview your face in Settings.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "iFace uses the camera on-device to recognize your face for unlocking your Mac, and to let you enroll and preview your face in Settings.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Ankush Kushwaha. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.2;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jonathan.glance;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ankush.iface;
+				PRODUCT_NAME = iFace;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

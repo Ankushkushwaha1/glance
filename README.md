@@ -179,4 +179,4 @@ recognition.
 
 ## License
 
-[MIT](LICENSE) © Jonathan Zhou
+[MIT](LICENSE) © Ankush Kushwaha
