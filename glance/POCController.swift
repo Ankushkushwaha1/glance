@@ -32,6 +32,7 @@ final class POCController {
     }
 
     func openAccessibilitySettings() {
+        KeystrokeInjector.promptForAccessibility()
         KeystrokeInjector.openAccessibilityPreferences()
     }
 

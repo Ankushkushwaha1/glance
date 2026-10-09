@@ -138,6 +138,9 @@ struct PasswordSettingsPage: View {
         .onAppear {
             pocController.refreshCredentialStatus()
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            pocController.refreshCredentialStatus()
+        }
     }
 
     // MARK: - Accessibility Banner
@@ -153,7 +156,7 @@ struct PasswordSettingsPage: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.primary)
 
-                Text("macOS requires Accessibility permission for iFace so it can enter your password on the lock screen.")
+                Text("macOS requires Accessibility permission for iFace so it can enter your password on the lock screen. If already checked in System Settings, try toggling it OFF and ON, or click Restart iFace below.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
@@ -170,6 +173,12 @@ struct PasswordSettingsPage: View {
 
                     Button("Check Again") {
                         pocController.refreshCredentialStatus()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+
+                    Button("Restart iFace") {
+                        relaunchApp()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -228,6 +237,17 @@ struct PasswordSettingsPage: View {
             statusMessage = "Password and face enrollment removed."
         } catch {
             statusMessage = "Couldn't remove: \(error.localizedDescription)"
+        }
+    }
+
+    private func relaunchApp() {
+        let appURL = Bundle.main.bundleURL
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: appURL, configuration: config) { _, _ in
+            DispatchQueue.main.async {
+                NSApp.terminate(nil)
+            }
         }
     }
 }
