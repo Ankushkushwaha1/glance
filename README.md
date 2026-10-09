@@ -23,12 +23,10 @@
 
 <!-- ======================================================== -->
 <!-- DEMO VIDEO: Paste you
-
-https://github.com/user-attachments/assets/53f28b22-dfa0-4051-8eee-bd13bd98ead3
-
 r video link or drop your video below -->
 <!-- https://github.com/user-attachments/assets/YOUR-VIDEO-ID -->
 <!-- ======================================================== -->
+https://github.com/user-attachments/assets/53f28b22-dfa0-4051-8eee-bd13bd98ead3
 
 **iFace** brings the seamless Apple Face ID experience to macOS. Unlock your Mac automatically with a single glance and protect your private applications behind instant biometric verification — no typing passwords or reaching for the keyboard.
 
