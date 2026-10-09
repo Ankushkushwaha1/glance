@@ -41,8 +41,7 @@ public final class AppLockSessionBook {
         
         switch session.policy {
         case .everyTime:
-            // If it has lost focus at all, it's locked.
-            // If it currently has focus, focusLostAt is nil, so it's unlocked.
+            // If focus was lost at all, it's locked.
             return session.focusLostAt == nil
             
         case .afterMinutes(let minutes):
@@ -54,19 +53,46 @@ public final class AppLockSessionBook {
                 let seconds = TimeInterval(minutes * 60)
                 return (now - lostAt) < seconds
             }
-            // If it hasn't lost focus, it remains unlocked
             return true
         }
     }
     
-    /// Records when a locked app loses focus.
-    public func focusLost(_ bundleID: String) {
-        if var session = sessions[bundleID] {
-            // Only record the first time focus is lost if it wasn't already recorded
-            if session.focusLostAt == nil {
-                session.focusLostAt = currentUptime
-                sessions[bundleID] = session
+    /// Called when any app becomes active.
+    /// Any unlocked app other than the active one has lost focus and was switched away from!
+    public func appActivated(_ activeBundleID: String) {
+        for (bundleID, session) in sessions {
+            guard bundleID != activeBundleID else { continue }
+            switch session.policy {
+            case .everyTime:
+                // Immediately revoke session when switching away
+                sessions.removeValue(forKey: bundleID)
+            case .afterMinutes:
+                break
+            case .afterFocusLossMinutes:
+                if session.focusLostAt == nil {
+                    var s = session
+                    s.focusLostAt = currentUptime
+                    sessions[bundleID] = s
+                }
             }
+        }
+    }
+    
+    /// Records when a locked app loses focus (e.g. minimized, deactivated, hidden).
+    public func focusLost(_ bundleID: String) {
+        guard let session = sessions[bundleID] else { return }
+        switch session.policy {
+        case .everyTime:
+            // Immediately revoke session when minimized or focus lost
+            sessions.removeValue(forKey: bundleID)
+        case .afterFocusLossMinutes:
+            if session.focusLostAt == nil {
+                var s = session
+                s.focusLostAt = currentUptime
+                sessions[bundleID] = s
+            }
+        case .afterMinutes:
+            break
         }
     }
     
@@ -81,11 +107,9 @@ public final class AppLockSessionBook {
                 session.focusLostAt = nil
                 sessions[bundleID] = session
             case .everyTime, .afterMinutes:
-                // No change needed
                 break
             }
         } else {
-            // Clean up invalid session
             revoke(bundleID)
         }
     }
@@ -95,7 +119,7 @@ public final class AppLockSessionBook {
         sessions.removeAll()
     }
     
-    /// Revokes a single app's session.
+    /// Revokes the session for a specific app immediately.
     public func revoke(_ bundleID: String) {
         sessions.removeValue(forKey: bundleID)
     }

@@ -58,6 +58,10 @@ final class AppLockController {
             }
         }
 
+        watcher.onAppActivated = { [weak self] bundleId in
+            self?.sessionBook.appActivated(bundleId)
+        }
+
         watcher.onFocusLost = { [weak self] bundleId in
             self?.sessionBook.focusLost(bundleId)
         }
