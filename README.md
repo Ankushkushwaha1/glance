@@ -71,6 +71,15 @@ Your password is encrypted locally using AES-256 and protected by Apple Keychain
 2. Open the `.dmg` file and drag **iFace** to your **Applications** folder.
 3. Open **iFace** from Launchpad or Applications and follow the guided setup.
 
+> [!NOTE]
+> **If macOS says *"iFace is damaged and can't be opened"***:
+> Because iFace is an independent open-source project without a paid Apple Developer certificate, macOS Gatekeeper quarantines the downloaded file. The app is completely safe.
+> To launch it, run this one command in **Terminal**:
+> ```bash
+> xattr -cr /Applications/iFace.app
+> ```
+> *(Or open **System Settings → Privacy & Security** → scroll to **Security** and click **Open Anyway**).*
+
 ### Permissions Required
 * **Camera**: Required to verify your face. Processed strictly in memory and never saved to disk.
 * **Accessibility**: Required to type your credentials into the macOS lock screen.
