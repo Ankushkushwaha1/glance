@@ -26,5 +26,9 @@ final class AppEnvironment {
     init() {
         faceUnlockCoordinator = FaceUnlockCoordinator(pocController: pocController)
         sessionAutoLocker = SessionAutoLocker(pocController: pocController)
+        // Start App Lock monitoring if onboarding is complete and feature is enabled.
+        if GlanceSettings.shared.hasCompletedOnboarding {
+            appLockController.start()
+        }
     }
 }

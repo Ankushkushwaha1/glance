@@ -12,11 +12,9 @@ import Combine
 @Observable @MainActor
 final class AppLockController {
 
-    static let shared = AppLockController()
-
     private let watcher = AppLockWatcher()
     private let sessionBook = AppLockSessionBook()
-    private let shieldController = AppLockShieldController.shared
+    private var shieldController: AppLockShieldController { AppLockShieldController.shared }
 
     private(set) var activeApp: NSRunningApplication?
     private var queue: [NSRunningApplication] = []
@@ -24,13 +22,18 @@ final class AppLockController {
 
     private var cancellables = Set<AnyCancellable>()
     private var verificationTask: Task<Void, Never>?
+    private var hasStarted = false
 
     init() {
-        setupWatcher()
-        setupSystemEventHandling()
+        // Deliberately lightweight — heavy setup deferred to start().
     }
 
     func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
+        guard LockedAppStore.shared.isEnabled else { return }
+        setupWatcher()
+        setupSystemEventHandling()
         watcher.start()
     }
 
@@ -39,6 +42,7 @@ final class AppLockController {
         shieldController.dismiss()
         sessionBook.revokeAll()
         activeApp?.hide()
+        hasStarted = false
     }
 
     // MARK: - Watcher Callbacks
@@ -125,12 +129,12 @@ final class AppLockController {
                     continue
                 }
 
-                // Run recognition synchronously on a detached task (nonisolated)
+                // Run recognition on a detached task (nonisolated) — capture primitives first so only Sendable values cross the boundary
+                let cgImage = frame.image
                 let identities = FaceEnrollmentStore.shared.activeIdentities
                 let threshold = GlanceSettings.shared.matchThreshold
-
                 let matched = await Task.detached(priority: .userInitiated) {
-                    guard let result = try? pipeline.recognize(in: frame.image) else { return false }
+                    guard let result = try? await pipeline.recognize(in: cgImage) else { return false }
                     let scored = pipeline.score(result.embedding, against: identities)
                     return pipeline.bestMatch(in: scored, threshold: threshold) != nil
                 }.value
