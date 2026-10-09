@@ -412,7 +412,7 @@ final class FaceUnlockCoordinator {
                     ? (confirmingCue.map { "live via \($0.title)" } ?? "liveness clear")
                     : "liveness off"
                 lastOutcome = "Matched \(readyMatch.identity.name) at \(String(format: "%.3f", readyMatch.centroidSimilarity)), \(livenessNote)."
-                await pocController.injectStoredPassword(requireAuthoritativeLock: true)
+                await pocController.injectStoredPassword(requireAuthoritativeLock: false)
                 return .matched
             }
 

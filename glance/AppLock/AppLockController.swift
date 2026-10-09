@@ -31,7 +31,6 @@ final class AppLockController {
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
-        guard LockedAppStore.shared.isEnabled else { return }
         setupWatcher()
         setupSystemEventHandling()
         watcher.start()

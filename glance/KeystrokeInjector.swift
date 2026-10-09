@@ -47,8 +47,11 @@ enum KeystrokeInjector {
             throw KeystrokeError.eventCreationFailed
         }
         let source = CGEventSource(stateID: .hidSystemState)
+        Thread.sleep(forTimeInterval: 0.05)
         try clearFocusedField(source: source)
+        Thread.sleep(forTimeInterval: 0.03)
         try postUnicodeText(text, source: source)
+        Thread.sleep(forTimeInterval: 0.06)
         try postReturn(source: source)
     }
 
@@ -101,7 +104,7 @@ enum KeystrokeInjector {
     /// with longer payloads, while replacing one down/up pair per character with
     /// one pair per batch.
     nonisolated private static let maximumUnicodeBatchLength = 20
-    nonisolated private static let unicodeEventInterval: TimeInterval = 0.004
+    nonisolated private static let unicodeEventInterval: TimeInterval = 0.012
 
     /// Posts the password in small UTF-16 batches. Splitting occurs only between
     /// surrogate pairs, so non-BMP password characters are never corrupted.
