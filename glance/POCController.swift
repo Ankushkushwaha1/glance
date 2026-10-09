@@ -31,7 +31,12 @@ final class POCController {
         KeystrokeInjector.promptForAccessibility()
     }
 
+    func openAccessibilitySettings() {
+        KeystrokeInjector.openAccessibilityPreferences()
+    }
+
     func refreshCredentialStatus() {
+        accessibilityGranted = KeystrokeInjector.isAccessibilityTrusted()
         hasStoredPassword = SecureCredentialManager.hasStoredPassword()
         isSessionUnlocked = SecureCredentialManager.isSessionUnlocked
     }
@@ -51,7 +56,7 @@ final class POCController {
         sessionError = nil
         do {
             try await Task.detached(priority: .userInitiated) {
-                try SecureCredentialManager.unlockSession(reason: "Authenticate to set up or use glance")
+                try SecureCredentialManager.unlockSession(reason: "Authenticate to set up or use iFace")
             }.value
             isSessionUnlocked = true
         } catch {
@@ -67,8 +72,7 @@ final class POCController {
 
     // MARK: - Setup flow
 
-    /// Encrypts and stores `passwordInput`. Requires the session to already
-    /// be unlocked (Touch ID happens in `unlockSession()`, not here).
+    /// Encrypts and stores `passwordInput`.
     func savePassword() async {
         guard !passwordInput.isEmpty else {
             statusMessage = "Enter a password first."
@@ -86,7 +90,7 @@ final class POCController {
                 try SecureCredentialManager.savePassword(bytes)
             }.value
             statusMessage = "Password saved and encrypted."
-            hasStoredPassword = true
+            refreshCredentialStatus()
         } catch {
             statusMessage = "Save failed: \(error.localizedDescription)"
         }

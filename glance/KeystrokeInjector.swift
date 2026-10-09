@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AppKit
 import ApplicationServices
 import CoreGraphics
 
@@ -37,6 +38,13 @@ enum KeystrokeInjector {
         return AXIsProcessTrustedWithOptions(options)
     }
 
+    /// Directly opens macOS System Settings to Privacy & Security → Accessibility.
+    nonisolated static func openAccessibilityPreferences() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     /// Types the UTF-8 bytes into whatever has keyboard focus, then presses Return. Takes `Data` rather than `String` so the
     /// caller can hold the plaintext as a zero-able buffer; the brief internal `String` decode is scoped to this call. Blocking.
     nonisolated static func typeAndReturn(_ passwordBytes: Data) throws {
@@ -47,12 +55,23 @@ enum KeystrokeInjector {
             throw KeystrokeError.eventCreationFailed
         }
         let source = CGEventSource(stateID: .hidSystemState)
-        Thread.sleep(forTimeInterval: 0.05)
+
+        // 1. Wake the lock screen and focus the password text box
+        // On macOS Sonoma & Sequoia, a Space tap awakens the login window clock
+        try postKey(0x31, flags: [], source: source)
+        Thread.sleep(forTimeInterval: 0.15)
+
+        // 2. Clear any stray characters (including the space we just typed)
         try clearFocusedField(source: source)
-        Thread.sleep(forTimeInterval: 0.03)
+        Thread.sleep(forTimeInterval: 0.04)
+
+        // 3. Type password in Unicode batches
         try postUnicodeText(text, source: source)
-        Thread.sleep(forTimeInterval: 0.06)
+        Thread.sleep(forTimeInterval: 0.08)
+
+        // 4. Press Return to unlock
         try postReturn(source: source)
+        Thread.sleep(forTimeInterval: 0.05)
     }
 
     /// Wipes anything already typed into the focused field (e.g. a stray keypress
@@ -64,6 +83,7 @@ enum KeystrokeInjector {
         let delete: CGKeyCode = 0x33
         try postKey(rightArrow, flags: .maskCommand, source: source)
         try postKey(delete, flags: .maskCommand, source: source)
+        try postKey(delete, flags: [], source: source)
     }
 
     /// Posts a virtual key down/up, wrapped in a real ⌘ down/up when `flags`
